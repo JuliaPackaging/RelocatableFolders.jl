@@ -36,7 +36,7 @@ very large files then it is better to make use of Julia's `Artifact` system
 instead.
 
 Building new paths from, for example, `ASSETS` in the above example will return
-a `String` containing the resolved path rather than a `Folder` object. Do this
+a `String` containing the resolved path rather than a `Folder` object. Doing this
 at the module-level will result in hardcoded paths that will run into
 relocatability issues as discussed above. Always create a new `@folder_str` for
 each resource you wish to reference rather than building them in parts.
