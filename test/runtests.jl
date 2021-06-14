@@ -21,7 +21,6 @@ end
         @test length(M.DIR.files) == 3
         @test M.DIR.mod == M
         @test M.DIR.path == joinpath(@__DIR__, "path")
-        @test M.DIR.hash == "2d8f4983bd98b6156e6e2917311c71120dd00609"
     end
     from, to = joinpath.(Ref(@__DIR__), ("path", "moved"))
     try
