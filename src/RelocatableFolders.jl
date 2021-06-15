@@ -2,57 +2,61 @@ module RelocatableFolders
 
 import Scratch, SHA
 
-export @folder_str
+export @path
 
 """
-    folder"path"
-    @folder_str "path"
+    @path expr
 
-Define a "relocatable" folder. It's contents will be available regardless of
-whether the original folder still exists or not. The contents of the folder is
-stored within the returned `Folder` object and the folder structure is
-recreated as a scratchspace if the original does not exist anymore. Calling any
-path manipulation functions on the `Folder` will return a path to a valid
-folder.
+Define a "relocatable" path. It's contents will be available regardless of
+whether the original path still exists or not. The contents of the path is
+stored within the returned `Path` object and the folder structure is recreated
+as a scratchspace if the original does not exist anymore. Calling any path
+manipulation functions, such as `joinpath`, on the `Path` will return a path
+to a valid folder.
 """
-macro folder_str(path)
-    dir = string(__source__.file)
-    dir = isfile(dir) ? dirname(dir) : pwd()
-    return :($(Folder)($__module__, $dir, $(esc(path))))
+macro path(expr)
+    file = string(__source__.file)
+    dir = isfile(file) ? dirname(file) : pwd()
+    return :($(Path)($__module__, $dir, $(esc(expr))))
 end
 
-struct Folder <: AbstractString
+struct Path <: AbstractString
+    is_dir::Bool
     mod::Module
     path::String
     hash::String
     files::Dict{String,Vector{UInt8}}
 
-    function Folder(mod::Module, dir, path::AbstractString)
+    function Path(mod::Module, dir, path::AbstractString)
         path = isabspath(path) ? path : normpath(joinpath(dir, path))
-        isdir(path) || throw(ArgumentError("not a directory: `$path`"))
+        ispath(path) || throw(ArgumentError("not a path: `$path`"))
+        is_dir = isdir(path)
+        dir = is_dir ? path : dirname(path)
         files = Dict{String,Vector{UInt8}}()
         ctx = SHA.SHA1_CTX()
-        for (root, _, fs) in walkdir(path), f in fs
+        for (root, _, fs) in walkdir(dir), f in fs
             fullpath = joinpath(root, f)
-            include_dependency(fullpath)
-            SHA.update!(ctx, codeunits(fullpath))
-            content = read(fullpath)
-            SHA.update!(ctx, content)
-            files[relpath(fullpath, path)] = content
+            if is_dir || path == fullpath
+                include_dependency(fullpath)
+                SHA.update!(ctx, codeunits(fullpath))
+                content = read(fullpath)
+                SHA.update!(ctx, content)
+                files[relpath(fullpath, dir)] = content
+            end
         end
-        return new(mod, path, string(Base.SHA1(SHA.digest!(ctx))), files)
+        return new(is_dir, mod, dir, string(Base.SHA1(SHA.digest!(ctx))), files)
     end
 end
 
-Base.show(io::IO, path::Folder) = print(io, repr(path.path))
-Base.ncodeunits(f::Folder) = ncodeunits(getpath(f))
-Base.isvalid(f::Folder, index::Integer) = isvalid(getpath(f), index)
-Base.iterate(f::Folder) = iterate(getpath(f))
-Base.iterate(f::Folder, state::Integer) = iterate(getpath(f), state)
-Base.String(f::Folder) = String(getpath(f))
+Base.show(io::IO, path::Path) = print(io, repr(getroot(path)))
+Base.ncodeunits(f::Path) = ncodeunits(getpath(f))
+Base.isvalid(f::Path, index::Integer) = isvalid(getpath(f), index)
+Base.iterate(f::Path) = iterate(getpath(f))
+Base.iterate(f::Path, state::Integer) = iterate(getpath(f), state)
+Base.String(f::Path) = String(getpath(f))
 
-function getpath(f::Folder)
-    isdir(f.path) && return f.path
+function getpath(f::Path)
+    ispath(f.path) && return getroot(f)
     dir = Scratch.get_scratch!(f.mod, f.hash)
     if !isempty(f.files) && !ispath(joinpath(dir, first(keys(f.files))))
         cd(dir) do
@@ -62,7 +66,9 @@ function getpath(f::Folder)
             end
         end
     end
-    return dir
+    return getroot(f, dir)
 end
+
+getroot(p::Path, root = p.path) = p.is_dir ? root : joinpath(root, first(keys(p.files)))
 
 end # module

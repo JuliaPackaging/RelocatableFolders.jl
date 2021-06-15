@@ -4,12 +4,16 @@ module M
 
 using RelocatableFolders
 
-const DIR = folder"path"
+const DIR = @path "path"
+const FILE = @path joinpath("path", "file.jl")
 
 end
 
 @testset "RelocatableFolders" begin
     tests = function ()
+        @test isfile(M.FILE)
+        @test read(M.FILE, String) == "# file.jl"
+
         @test isdir(M.DIR)
         @test sort(readdir(M.DIR)) == ["file.jl", "subfolder", "text.md"]
         @test readdir(joinpath(M.DIR, "subfolder")) == ["other.jl"]
@@ -26,6 +30,7 @@ end
     try
         tests()
         @test String(M.DIR) == joinpath(@__DIR__, "path")
+        @test String(M.FILE) == joinpath(@__DIR__, "path", "file.jl")
 
         # Remove the referenced folder `DIR`.
         @test isdir(from)
@@ -38,8 +43,13 @@ end
             rm(path; recursive = true)
             @test !isdir(path)
         end
+        let file = String(M.FILE)
+            @test isfile(file)
+            @test file != joinpath(@__FILE__, "path", "file.jl")
+        end
         tests()
         @test String(M.DIR) != joinpath(@__DIR__, "path")
+        @test String(M.FILE) != joinpath(@__DIR__, "path", "file.jl")
 
         # Return the referenced folder `DIR`.
         @test !isdir(from)
@@ -50,6 +60,7 @@ end
 
         tests()
         @test String(M.DIR) == joinpath(@__DIR__, "path")
+        @test String(M.FILE) == joinpath(@__DIR__, "path", "file.jl")
     finally
         isdir(from) || mv(to, from)
     end

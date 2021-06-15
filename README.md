@@ -1,8 +1,8 @@
 # RelocatableFolders.jl
 
-An alternative to the `@__DIR__` macro. Packages that wish to reference folders
+An alternative to the `@__DIR__` macro. Packages that wish to reference paths
 in their project directory run into issues with relocatability when used in
-conjunction with `PackageCompiler`. The `@folder_str` provided by this package
+conjunction with `PackageCompiler`. The `@path` macro provided by this package
 overcomes this limitation. See [here][pkgcompiler] and [here][julia-issue] for
 further details.
 
@@ -11,7 +11,7 @@ further details.
 
 ## Usage
 
-The package provides one export, the `@folder_str` macro. It can be used to replace
+The package provides one export, the `@path` macro. It can be used to replace
 `@__DIR__` in the following way:
 
 ```julia
@@ -20,7 +20,7 @@ module MyPackage
 using RelocatableFolders
 
 # const ASSETS = joinpath(@__DIR__, "../assets")
-const ASSETS = folder"../assets"
+const ASSETS = @path joinpath(@__DIR__, "../assets")
 
 end
 ```
@@ -31,21 +31,33 @@ scratchspace containing the same folder and file structure as the original.
 
 ## Limitations
 
-This macro should only be used for reasonably small folder sizes. If there are
-very large files then it is better to make use of Julia's `Artifact` system
-instead.
+This macro should only be used for reasonably small file or folder sizes. If
+there are very large files then it is better to make use of Julia's `Artifact`
+system instead.
 
 Building new paths from, for example, `ASSETS` in the above example will return
-a `String` containing the resolved path rather than a `Folder` object. Doing this
+a `String` containing the resolved path rather than a `Path` object. Doing this
 at the module-level will result in hardcoded paths that will run into
-relocatability issues as discussed above. Always create a new `@folder_str` for
-each resource you wish to reference rather than building them in parts.
+relocatability issues as discussed above. Always create a new `@path` for
+each resource you wish to reference rather than building them in parts, e.g.
+
+```julia
+module MyPackage
+
+using RelocatableFolders
+
+const ASSETS = @path joinpath(@__DIR__, "../assets")
+const SUBDIR = @path joinpath(ASSETS, "subdir")
+const FILE = @path joinpath(ASSETS, "file.txt")
+
+end
+```
 
 ## Internals
 
-At compile-time the `@folder_str` will read in all the files contained in the
-referenced folder and store them and their paths. The returned object is a
-`Folder <: AbstractString`. Whenever a `Folder` is passed to a function
+At compile-time the `@path` macro will read in all the files contained in the
+referenced path and store them and their paths. The returned object is a
+`Path <: AbstractString`. Whenever a `Path` is passed to a function
 expecting an `AbstractString` (such as `readdir`) it will be converted to a
 `String` by looking up the stored path and returning that. When no path exists
 (the source tree no longer exists) then the contents of the files that were
