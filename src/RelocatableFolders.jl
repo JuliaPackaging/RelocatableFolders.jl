@@ -4,6 +4,24 @@ import Scratch, SHA
 
 export @path
 
+function safe_isfile(file)
+    return try
+        isfile(file)
+    catch err
+        err isa IOError || rethrow()
+        false
+    end
+end
+
+function safe_ispath(file)
+    return try
+        ispath(file)
+    catch err
+        err isa IOError || rethrow()
+        false
+    end
+end
+
 """
     @path expr
 
@@ -16,7 +34,7 @@ to a valid folder.
 """
 macro path(expr)
     file = string(__source__.file)
-    dir = isfile(file) ? dirname(file) : pwd()
+    dir = safe_isfile(file) ? dirname(file) : pwd()
     return :($(Path)($__module__, $dir, $(esc(expr))))
 end
 
@@ -29,7 +47,7 @@ struct Path <: AbstractString
 
     function Path(mod::Module, dir, path::AbstractString)
         path = isabspath(path) ? path : normpath(joinpath(dir, path))
-        ispath(path) || throw(ArgumentError("not a path: `$path`"))
+        safe_ispath(path) || throw(ArgumentError("not a path: `$path`"))
         is_dir = isdir(path)
         dir = is_dir ? path : dirname(path)
         files = Dict{String,Vector{UInt8}}()
@@ -56,9 +74,9 @@ Base.iterate(f::Path, state::Integer) = iterate(getpath(f), state)
 Base.String(f::Path) = String(getpath(f))
 
 function getpath(f::Path)
-    ispath(f.path) && return getroot(f)
+    safe_ispath(f.path) && return getroot(f)
     dir = Scratch.get_scratch!(f.mod, f.hash)
-    if !isempty(f.files) && !ispath(joinpath(dir, first(keys(f.files))))
+    if !isempty(f.files) && !safe_ispath(joinpath(dir, first(keys(f.files))))
         cd(dir) do
             for (file, blob) in f.files
                 mkpath(dirname(file))
