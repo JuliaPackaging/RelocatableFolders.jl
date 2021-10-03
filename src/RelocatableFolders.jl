@@ -8,7 +8,7 @@ function safe_isfile(file)
     return try
         isfile(file)
     catch err
-        err isa IOError || rethrow()
+        err isa Base.IOError || rethrow()
         false
     end
 end
@@ -17,7 +17,7 @@ function safe_ispath(file)
     return try
         ispath(file)
     catch err
-        err isa IOError || rethrow()
+        err isa Base.IOError || rethrow()
         false
     end
 end
