@@ -6,7 +6,7 @@ conjunction with `PackageCompiler`. The `@path` macro provided by this package
 overcomes this limitation. See [here][pkgcompiler] and [here][julia-issue] for
 further details.
 
-[pkgcompiler]: https://julialang.github.io/PackageCompiler.jl/dev/devdocs/relocatable_part_3/#Relocatability-of-Julia-packages-1
+[pkgcompiler]: https://julialang.github.io/PackageCompiler.jl/stable/apps.html#relocatability
 [julia-issue]: https://github.com/JuliaLang/julia/issues/38696
 
 ## Usage
