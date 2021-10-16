@@ -25,7 +25,7 @@ end
 """
     @path expr
 
-Define a "relocatable" path. It's contents will be available regardless of
+Define a "relocatable" path. Its contents will be available regardless of
 whether the original path still exists or not. The contents of the path is
 stored within the returned `Path` object and the folder structure is recreated
 as a scratchspace if the original does not exist anymore. Calling any path
