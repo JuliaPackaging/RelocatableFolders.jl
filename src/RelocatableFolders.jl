@@ -46,7 +46,8 @@ struct Path <: AbstractString
     files::Dict{String,Vector{UInt8}}
 
     function Path(mod::Module, dir, path::AbstractString)
-        path = isabspath(path) ? path : normpath(joinpath(dir, path))
+        path = isabspath(path) ? path : joinpath(dir, path)
+        path = normpath(path)
         safe_ispath(path) || throw(ArgumentError("not a path: `$path`"))
         is_dir = isdir(path)
         dir = is_dir ? path : dirname(path)

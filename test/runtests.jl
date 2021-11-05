@@ -6,6 +6,7 @@ using RelocatableFolders
 
 const DIR = @path "path"
 const FILE = @path joinpath("path", "file.jl")
+const OTHER = @path joinpath(DIR, "subfolder/other.jl") # issue 8
 
 end
 
@@ -13,6 +14,9 @@ end
     tests = function ()
         @test isfile(M.FILE)
         @test read(M.FILE, String) == "# file.jl"
+
+        @test isfile(M.OTHER)
+        @test read(M.OTHER, String) == "# other.jl"
 
         @test isdir(M.DIR)
         @test sort(readdir(M.DIR)) == ["file.jl", "subfolder", "text.md"]
