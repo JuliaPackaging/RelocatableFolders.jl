@@ -75,7 +75,7 @@ end
 
 should_ignore(path::AbstractString, ::Nothing) = false
 should_ignore(path::AbstractString, matcher::Function) = matcher(path)
-should_ignore(path::AbstractString, re::Regex) = !isnothing(match(re, path))
+should_ignore(path::AbstractString, re::Regex) = match(re, path) !== nothing
 should_ignore(path::AbstractString, res::Vector{Regex}) = any((should_ignore(path, re) for re in res))
 should_ignore(path::AbstractString, other) = error("unsupported argument type given for ignore.")
 
