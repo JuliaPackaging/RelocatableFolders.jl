@@ -7,6 +7,9 @@ using RelocatableFolders
 const DIR = @path "path"
 const FILE = @path joinpath("path", "file.jl")
 const OTHER = @path joinpath(DIR, "subfolder/other.jl") # issue 8
+const IGNORE_RE = @path "path" r".md$"
+const IGNORE_RES = @path "path" [r".md$"]
+const IGNORE_FN = @path "path" path -> endswith(path, ".md")
 
 end
 
@@ -29,6 +32,13 @@ end
         @test length(M.DIR.files) == 3
         @test M.DIR.mod == M
         @test M.DIR.path == joinpath(@__DIR__, "path")
+
+        @test length(M.IGNORE_RE.files) == 2
+        @test !haskey(M.IGNORE_RE.files, joinpath("path", "text.md"))
+        @test length(M.IGNORE_RES.files) == 2
+        @test !haskey(M.IGNORE_RES.files, joinpath("path", "text.md"))
+        @test length(M.IGNORE_FN.files) == 2
+        @test !haskey(M.IGNORE_FN.files, joinpath("path", "text.md"))
     end
     from, to = joinpath.(Ref(@__DIR__), ("path", "moved"))
     try
