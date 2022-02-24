@@ -11,7 +11,7 @@ const IGNORE_RE = @path "path" r".md$"
 const IGNORE_RE_REL = @path "path" r"^subfolder"
 const IGNORE_RES = @path "path" [r".md$"]
 const IGNORE_FN = @path "path" path -> endswith(path, ".md")
-const IGNORE_FN_REL = @path "path" !startswith("file")
+const IGNORE_FN_REL = @path "path" path -> !startswith(path, "file")
 
 end
 
