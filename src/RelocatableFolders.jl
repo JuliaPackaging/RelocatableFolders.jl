@@ -59,7 +59,7 @@ struct Path <: AbstractString
         ctx = SHA.SHA1_CTX()
         for (root, _, fs) in walkdir(dir), f in fs
             fullpath = joinpath(root, f)
-			rel = relpath(fullpath, dir)
+            rel = relpath(fullpath, dir)
             if !should_ignore(rel, ignore)
                 if is_dir || path == fullpath
                     include_dependency(fullpath)
