@@ -59,13 +59,14 @@ struct Path <: AbstractString
         ctx = SHA.SHA1_CTX()
         for (root, _, fs) in walkdir(dir), f in fs
             fullpath = joinpath(root, f)
-            if !should_ignore(fullpath, ignore)
+			rel = relpath(fullpath, dir)
+            if !should_ignore(rel, ignore)
                 if is_dir || path == fullpath
                     include_dependency(fullpath)
                     SHA.update!(ctx, codeunits(fullpath))
                     content = read(fullpath)
                     SHA.update!(ctx, content)
-                    files[relpath(fullpath, dir)] = content
+                    files[rel] = content
                 end
             end
         end

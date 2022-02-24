@@ -8,8 +8,10 @@ const DIR = @path "path"
 const FILE = @path joinpath("path", "file.jl")
 const OTHER = @path joinpath(DIR, "subfolder/other.jl") # issue 8
 const IGNORE_RE = @path "path" r".md$"
+const IGNORE_RE_REL = @path "path" r"^subfolder"
 const IGNORE_RES = @path "path" [r".md$"]
 const IGNORE_FN = @path "path" path -> endswith(path, ".md")
+const IGNORE_FN_REL = @path "path" !startswith("file")
 
 end
 
@@ -35,10 +37,15 @@ end
 
         @test length(M.IGNORE_RE.files) == 2
         @test !haskey(M.IGNORE_RE.files, joinpath("path", "text.md"))
+        @test length(M.IGNORE_RE_REL.files) == 2
+        @test !haskey(M.IGNORE_RE_REL.files, joinpath("path", "text.md"))
+        @test !haskey(M.IGNORE_RE_REL.files, joinpath("path", "file.jl"))
         @test length(M.IGNORE_RES.files) == 2
         @test !haskey(M.IGNORE_RES.files, joinpath("path", "text.md"))
         @test length(M.IGNORE_FN.files) == 2
         @test !haskey(M.IGNORE_FN.files, joinpath("path", "text.md"))
+        @test length(M.IGNORE_FN_REL.files) == 1
+        @test !haskey(M.IGNORE_FN_REL.files, joinpath("path", "file.jl"))
     end
     from, to = joinpath.(Ref(@__DIR__), ("path", "moved"))
     try
