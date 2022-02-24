@@ -2,7 +2,7 @@ module RelocatableFolders
 
 import Scratch, SHA
 
-export @path
+export @path, getroot
 
 function safe_isfile(file)
     return try
@@ -88,6 +88,18 @@ function getpath(f::Path)
     return getroot(f, dir)
 end
 
+"""
+    getroot(p::Path, root = p.path)
+
+Return the path for a `Path` object `p`, as if it were located in folder `root`.
+If `p` corresponds to a folder, return `root`.
+If `p` corresponds to a file `filename`, return `joinpath(root, filename)`.
+
+!!! warning
+    The result of `getroot` is not necessarily an existing path.
+    This function is mostly useful to get information about `p` (e.g., its extension)
+    without interacting with the filesystem.
+"""
 getroot(p::Path, root = p.path) = p.is_dir ? root : joinpath(root, first(keys(p.files)))
 
 end # module

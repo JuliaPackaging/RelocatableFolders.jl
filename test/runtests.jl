@@ -55,6 +55,23 @@ end
         @test String(M.DIR) != joinpath(@__DIR__, "path")
         @test String(M.FILE) != joinpath(@__DIR__, "path", "file.jl")
 
+        # Test that `getroot` returns the correct values and does not generate files
+        let path = String(M.DIR)
+            rm(path, recursive=true)
+            @test getroot(M.DIR) == joinpath(@__DIR__, "path")
+            @test !isdir(getroot(M.DIR))
+            @test getroot(M.DIR, path) == path
+            @test !isdir(getroot(M.DIR, path))
+        end
+        let file = String(M.FILE)
+            rm(file)
+            root = dirname(file)
+            @test getroot(M.FILE) == joinpath(@__DIR__, "path", "file.jl")
+            @test !isfile(getroot(M.FILE))
+            @test getroot(M.FILE, root) == file
+            @test !isfile(getroot(M.FILE, root))
+        end
+
         # Return the referenced folder `DIR`.
         @test !isdir(from)
         @test isdir(to)
