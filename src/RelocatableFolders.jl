@@ -23,7 +23,7 @@ function safe_ispath(file)
 end
 
 """
-    @path expr
+    @path expr [ignore]
 
 Define a "relocatable" path. Its contents will be available regardless of
 whether the original path still exists or not. The contents of the path is
@@ -31,11 +31,15 @@ stored within the returned `Path` object and the folder structure is recreated
 as a scratchspace if the original does not exist anymore. Calling any path
 manipulation functions, such as `joinpath`, on the `Path` will return a path
 to a valid folder.
+
+`ignore` can be used to skip reading in matching files. It can be a `Regex`,
+`Vector{Regex}`, or a single argument `Function` that takes the path and returns
+`true` if it should be ignored, `false` otherwise.
 """
-macro path(expr)
+macro path(expr, ignore = :nothing)
     file = string(__source__.file)
     dir = safe_isfile(file) ? dirname(file) : pwd()
-    return :($(Path)($__module__, $dir, $(esc(expr))))
+    return :($(Path)($__module__, $dir, $(esc(expr)), $(esc(ignore))))
 end
 
 struct Path <: AbstractString
@@ -45,7 +49,7 @@ struct Path <: AbstractString
     hash::String
     files::Dict{String,Vector{UInt8}}
 
-    function Path(mod::Module, dir, path::AbstractString)
+    function Path(mod::Module, dir, path::AbstractString, ignore = nothing)
         path = isabspath(path) ? path : joinpath(dir, path)
         path = normpath(path)
         safe_ispath(path) || throw(ArgumentError("not a path: `$path`"))
@@ -55,17 +59,26 @@ struct Path <: AbstractString
         ctx = SHA.SHA1_CTX()
         for (root, _, fs) in walkdir(dir), f in fs
             fullpath = joinpath(root, f)
-            if is_dir || path == fullpath
-                include_dependency(fullpath)
-                SHA.update!(ctx, codeunits(fullpath))
-                content = read(fullpath)
-                SHA.update!(ctx, content)
-                files[relpath(fullpath, dir)] = content
+            rel = relpath(fullpath, dir)
+            if !should_ignore(rel, ignore)
+                if is_dir || path == fullpath
+                    include_dependency(fullpath)
+                    SHA.update!(ctx, codeunits(fullpath))
+                    content = read(fullpath)
+                    SHA.update!(ctx, content)
+                    files[rel] = content
+                end
             end
         end
         return new(is_dir, mod, dir, string(Base.SHA1(SHA.digest!(ctx))), files)
     end
 end
+
+should_ignore(path::AbstractString, ::Nothing) = false
+should_ignore(path::AbstractString, matcher::Function) = matcher(path)
+should_ignore(path::AbstractString, re::Regex) = match(re, path) !== nothing
+should_ignore(path::AbstractString, res::Vector{Regex}) = any((should_ignore(path, re) for re in res))
+should_ignore(path::AbstractString, other) = error("unsupported argument type given for ignore.")
 
 Base.show(io::IO, path::Path) = print(io, repr(getroot(path)))
 Base.ncodeunits(f::Path) = ncodeunits(getpath(f))
