@@ -10,11 +10,6 @@ const OTHER = @path joinpath(DIR, "subfolder/other.jl") # issue 8
 const IGNORE_RE = @path "path" r".md$"
 const IGNORE_RES = @path "path" [r".md$"]
 const IGNORE_FN = @path "path" path -> endswith(path, ".md")
-const IGNORE_ERR = try
-    @path "path" 123
-catch e
-    e
-end
 
 end
 
@@ -44,7 +39,6 @@ end
         @test !haskey(M.IGNORE_RES.files, joinpath("path", "text.md"))
         @test length(M.IGNORE_FN.files) == 2
         @test !haskey(M.IGNORE_FN.files, joinpath("path", "text.md"))
-        @test IGNORE_ERR isa Exception
     end
     from, to = joinpath.(Ref(@__DIR__), ("path", "moved"))
     try
@@ -81,6 +75,8 @@ end
         tests()
         @test String(M.DIR) == joinpath(@__DIR__, "path")
         @test String(M.FILE) == joinpath(@__DIR__, "path", "file.jl")
+
+        @test_throws(ErrorException, @path("path", 123))
     finally
         isdir(from) || mv(to, from)
     end
