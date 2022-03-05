@@ -89,7 +89,7 @@ Base.String(f::Path) = String(getpath(f))
 
 function getpath(f::Path)
     safe_ispath(f.path) && return getroot(f)
-    dir = Scratch.get_scratch!(f.mod, f.hash)
+    dir = Scratch.get_scratch!(f.mod, f.hash * f.path)
     if !isempty(f.files) && !safe_ispath(joinpath(dir, first(keys(f.files))))
         cd(dir) do
             for (file, blob) in f.files
