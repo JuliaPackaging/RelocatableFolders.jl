@@ -85,6 +85,7 @@ Base.ncodeunits(f::Path) = ncodeunits(getpath(f))
 Base.isvalid(f::Path, index::Integer) = isvalid(getpath(f), index)
 Base.iterate(f::Path) = iterate(getpath(f))
 Base.iterate(f::Path, state::Integer) = iterate(getpath(f), state)
+Base.sizeof(f::Path) = sizeof(getpath(f))
 Base.String(f::Path) = String(getpath(f))
 
 function getpath(f::Path)
