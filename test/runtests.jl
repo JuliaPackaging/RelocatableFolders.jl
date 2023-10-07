@@ -4,6 +4,7 @@ module M
 
 using RelocatableFolders
 
+const BARE_FILE = @path "bare-file.jl"
 const DIR = @path "path"
 const FILE = @path joinpath("path", "file.jl")
 const OTHER = @path joinpath(DIR, "subfolder/other.jl") # issue 8
@@ -17,6 +18,9 @@ end
 
 @testset "RelocatableFolders" begin
     tests = function ()
+        @test isfile(M.BARE_FILE)
+        @test read(M.BARE_FILE, String) == "# bare file.jl"
+
         @test isfile(M.FILE)
         @test read(M.FILE, String) == "# file.jl"
 
@@ -48,6 +52,7 @@ end
         @test !haskey(M.IGNORE_FN_REL.files, joinpath("path", "file.jl"))
     end
     from, to = joinpath.(Ref(@__DIR__), ("path", "moved"))
+    file_from, file_to = joinpath.(Ref(@__DIR__), ("bare-file.jl", "moved-bare-file.jl"))
     try
         tests()
         @test String(M.DIR) == joinpath(@__DIR__, "path")
@@ -56,12 +61,17 @@ end
         # Remove the referenced folder `DIR`.
         @test isdir(from)
         @test !isdir(to)
+        @test isfile(file_from)
+        @test !isfile(file_to)
         mv(from, to)
+        mv(file_from, file_to)
         @test isdir(to)
         @test !isdir(from)
+        @test isfile(file_to)
+        @test !isfile(file_from)
 
         let path = String(M.DIR)
-            rm(path; recursive = true)
+            rm(path; recursive=true)
             @test !isdir(path)
         end
         let file = String(M.FILE)
@@ -103,5 +113,6 @@ end
         @test_throws(ErrorException, @path("path", 123))
     finally
         isdir(from) || mv(to, from)
+        isfile(file_from) || mv(file_to, file_from)
     end
 end
