@@ -1,7 +1,7 @@
 name = "RelocatableFolders"
 uuid = "05181044-ff0b-4ac5-8273-598c1e38db00"
 authors = ["Michael Hatherly <michael@pumas.ai>"]
-version = "1.0.0"
+version = "1.0.1"
 
 [deps]
 SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
