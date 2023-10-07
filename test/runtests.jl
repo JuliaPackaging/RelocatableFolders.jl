@@ -1,4 +1,4 @@
-using RelocatableFolders, Test
+using RelocatableFolders, Test, JSON3
 
 module M
 
@@ -13,6 +13,7 @@ const IGNORE_RE_REL = @path "path" r"^subfolder"
 const IGNORE_RES = @path "path" [r".md$"]
 const IGNORE_FN = @path "path" path -> endswith(path, ".md")
 const IGNORE_FN_REL = @path "path" path -> !startswith(path, "file")
+const JSON_FILE = @path joinpath("path", "file.json")
 
 end
 
@@ -28,28 +29,34 @@ end
         @test read(M.OTHER, String) == "# other.jl"
 
         @test isdir(M.DIR)
-        @test sort(readdir(M.DIR)) == ["file.jl", "subfolder", "text.md"]
+        @test sort(readdir(M.DIR)) == ["file.jl", "file.json", "subfolder", "text.md"]
         @test readdir(joinpath(M.DIR, "subfolder")) == ["other.jl"]
 
         @test read(joinpath(M.DIR, "file.jl"), String) == "# file.jl"
         @test read(joinpath(M.DIR, "text.md"), String) == "text.md"
         @test read(joinpath(M.DIR, "subfolder", "other.jl"), String) == "# other.jl"
 
-        @test length(M.DIR.files) == 3
+        @test length(M.DIR.files) == 4
         @test M.DIR.mod == M
         @test M.DIR.path == joinpath(@__DIR__, "path")
 
-        @test length(M.IGNORE_RE.files) == 2
+        @test length(M.IGNORE_RE.files) == 3
         @test !haskey(M.IGNORE_RE.files, joinpath("path", "text.md"))
-        @test length(M.IGNORE_RE_REL.files) == 2
+        @test length(M.IGNORE_RE_REL.files) == 3
         @test !haskey(M.IGNORE_RE_REL.files, joinpath("path", "text.md"))
         @test !haskey(M.IGNORE_RE_REL.files, joinpath("path", "file.jl"))
-        @test length(M.IGNORE_RES.files) == 2
+        @test length(M.IGNORE_RES.files) == 3
         @test !haskey(M.IGNORE_RES.files, joinpath("path", "text.md"))
-        @test length(M.IGNORE_FN.files) == 2
+        @test length(M.IGNORE_FN.files) == 3
         @test !haskey(M.IGNORE_FN.files, joinpath("path", "text.md"))
-        @test length(M.IGNORE_FN_REL.files) == 1
+        @test length(M.IGNORE_FN_REL.files) == 2
         @test !haskey(M.IGNORE_FN_REL.files, joinpath("path", "file.jl"))
+
+        # JSON3.read has a different interface on versions that support Julia < 1.6.
+        if VERSION >= v"1.6"
+            @test JSON3.read(M.JSON_FILE).key == "value"
+            @test JSON3.read(M.JSON_FILE, Dict{String,Any}) == Dict{String,Any}("key" => "value")
+        end
     end
     from, to = joinpath.(Ref(@__DIR__), ("path", "moved"))
     file_from, file_to = joinpath.(Ref(@__DIR__), ("bare-file.jl", "moved-bare-file.jl"))
