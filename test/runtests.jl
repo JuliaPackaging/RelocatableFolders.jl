@@ -52,8 +52,11 @@ end
         @test length(M.IGNORE_FN_REL.files) == 2
         @test !haskey(M.IGNORE_FN_REL.files, joinpath("path", "file.jl"))
 
-        @test JSON3.read(M.JSON_FILE).key == "value"
-        @test JSON3.read(M.JSON_FILE, Dict{String,Any}) == Dict{String,Any}("key" => "value")
+        # JSON3.read has a different interface on versions that support Julia < 1.6.
+        if VERSION >= v"1.6"
+            @test JSON3.read(M.JSON_FILE).key == "value"
+            @test JSON3.read(M.JSON_FILE, Dict{String,Any}) == Dict{String,Any}("key" => "value")
+        end
     end
     from, to = joinpath.(Ref(@__DIR__), ("path", "moved"))
     file_from, file_to = joinpath.(Ref(@__DIR__), ("bare-file.jl", "moved-bare-file.jl"))
