@@ -36,7 +36,7 @@ to a valid folder.
 `Vector{Regex}`, or a single argument `Function` that takes the path and returns
 `true` if it should be ignored, `false` otherwise.
 """
-macro path(expr, ignore = :nothing)
+macro path(expr, ignore=:nothing)
     file = string(__source__.file)
     dir = safe_isfile(file) ? dirname(file) : pwd()
     return :($(Path)($__module__, $dir, $(esc(expr)), $(esc(ignore))))
@@ -49,7 +49,7 @@ struct Path <: AbstractString
     hash::String
     files::Dict{String,Vector{UInt8}}
 
-    function Path(mod::Module, dir, path::AbstractString, ignore = nothing)
+    function Path(mod::Module, dir, path::AbstractString, ignore=nothing)
         path = isabspath(path) ? path : joinpath(dir, path)
         path = normpath(path)
         safe_ispath(path) || throw(ArgumentError("not a path: `$path`"))
@@ -88,7 +88,14 @@ Base.iterate(f::Path, state::Integer) = iterate(getpath(f), state)
 Base.String(f::Path) = String(getpath(f))
 
 function getpath(f::Path)
-    safe_ispath(f.path) && return getroot(f)
+    if safe_ispath(f.path)
+        root = getroot(f)
+        # Confirm whether what's actually been returned as the root path is
+        # valid, when it isn't then provide the relocated path instead.
+        if safe_ispath(root)
+            return root
+        end
+    end
     dir = Scratch.get_scratch!(f.mod, f.hash * "_" * string(hash(f.path), base=62))
     if !isempty(f.files) && !safe_ispath(joinpath(dir, first(keys(f.files))))
         cd(dir) do
@@ -113,6 +120,6 @@ If `p` corresponds to a file `filename`, return `joinpath(root, filename)`.
     This function is mostly useful to get information about `p` (e.g., its extension)
     without interacting with the filesystem.
 """
-getroot(p::Path, root = p.path) = p.is_dir ? root : joinpath(root, first(keys(p.files)))
+getroot(p::Path, root=p.path) = p.is_dir ? root : joinpath(root, first(keys(p.files)))
 
 end # module
