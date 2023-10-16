@@ -29,25 +29,31 @@ end
         @test read(M.OTHER, String) == "# other.jl"
 
         @test isdir(M.DIR)
-        @test sort(readdir(M.DIR)) == ["file.jl", "file.json", "subfolder", "text.md"]
+        @test sort(readdir(M.DIR)) == ["file.jl", "file.json", "readonly.txt", "subfolder", "text.md"]
         @test readdir(joinpath(M.DIR, "subfolder")) == ["other.jl"]
 
         @test read(joinpath(M.DIR, "file.jl"), String) == "# file.jl"
         @test read(joinpath(M.DIR, "text.md"), String) == "text.md"
         @test read(joinpath(M.DIR, "subfolder", "other.jl"), String) == "# other.jl"
+        @test read(joinpath(M.DIR, "readonly.txt"), String) == "This file is readonly.\n"
 
-        @test length(M.DIR.files) == 4
+        # File permission test
+        m = filemode(joinpath(M.DIR, "readonly.txt"))
+        @test m & 0o400 == 0o400 # user read bit
+        @test m & 0o200 == 0o000 # user write bit
+
+        @test length(M.DIR.files) == 5
         @test M.DIR.mod == M
         @test M.DIR.path == joinpath(@__DIR__, "path")
 
-        @test length(M.IGNORE_RE.files) == 3
+        @test length(M.IGNORE_RE.files) == 4
         @test !haskey(M.IGNORE_RE.files, joinpath("path", "text.md"))
-        @test length(M.IGNORE_RE_REL.files) == 3
+        @test length(M.IGNORE_RE_REL.files) == 4
         @test !haskey(M.IGNORE_RE_REL.files, joinpath("path", "text.md"))
         @test !haskey(M.IGNORE_RE_REL.files, joinpath("path", "file.jl"))
-        @test length(M.IGNORE_RES.files) == 3
+        @test length(M.IGNORE_RES.files) == 4
         @test !haskey(M.IGNORE_RES.files, joinpath("path", "text.md"))
-        @test length(M.IGNORE_FN.files) == 3
+        @test length(M.IGNORE_FN.files) == 4
         @test !haskey(M.IGNORE_FN.files, joinpath("path", "text.md"))
         @test length(M.IGNORE_FN_REL.files) == 2
         @test !haskey(M.IGNORE_FN_REL.files, joinpath("path", "file.jl"))

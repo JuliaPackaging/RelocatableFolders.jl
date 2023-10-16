@@ -42,12 +42,18 @@ macro path(expr, ignore=:nothing)
     return :($(Path)($__module__, $dir, $(esc(expr)), $(esc(ignore))))
 end
 
+struct File
+    relative_path::String
+    bytes::Vector{UInt8}
+    mode::UInt64
+end
+
 struct Path <: AbstractString
     is_dir::Bool
     mod::Module
     path::String
     hash::String
-    files::Dict{String,Vector{UInt8}}
+    files::Dict{String,File}
 
     function Path(mod::Module, dir, path::AbstractString, ignore=nothing)
         path = isabspath(path) ? path : joinpath(dir, path)
@@ -55,7 +61,7 @@ struct Path <: AbstractString
         safe_ispath(path) || throw(ArgumentError("not a path: `$path`"))
         is_dir = isdir(path)
         dir = is_dir ? path : dirname(path)
-        files = Dict{String,Vector{UInt8}}()
+        files = Dict{String,File}()
         ctx = SHA.SHA1_CTX()
         for (root, _, fs) in walkdir(dir), f in fs
             fullpath = joinpath(root, f)
@@ -66,11 +72,11 @@ struct Path <: AbstractString
                     SHA.update!(ctx, codeunits(fullpath))
                     content = read(fullpath)
                     SHA.update!(ctx, content)
-                    files[rel] = content
+                    files[rel] = File(rel, content, filemode(fullpath))
                 end
             end
         end
-        return new(is_dir, mod, dir, string(Base.SHA1(SHA.digest!(ctx))), files)
+        return new(is_dir, mod, dir, bytes2hex(SHA.digest!(ctx)), files)
     end
 end
 
@@ -100,11 +106,11 @@ function getpath(f::Path)
     end
     dir = Scratch.get_scratch!(f.mod, f.hash * "_" * string(hash(f.path), base=62))
     if !isempty(f.files) && !safe_ispath(joinpath(dir, first(keys(f.files))))
-        cd(dir) do
-            for (file, blob) in f.files
-                mkpath(dirname(file))
-                write(file, blob)
-            end
+        for file in values(f.files)
+            fullpath = joinpath(dir, file.relative_path)
+            mkpath(dirname(fullpath))
+            write(fullpath, file.bytes)
+            chmod(fullpath, file.mode)
         end
     end
     return getroot(f, dir)
