@@ -23,7 +23,7 @@ function safe_ispath(file)
 end
 
 """
-    @path expr [ignore]
+    @path expr [ignore] [force]
 
 Define a "relocatable" path. Its contents will be available regardless of
 whether the original path still exists or not. The contents of the path is
@@ -32,14 +32,18 @@ as a scratchspace if the original does not exist anymore. Calling any path
 manipulation functions, such as `joinpath`, on the `Path` will return a path
 to a valid folder.
 
-`ignore` can be used to skip reading in matching files. It can be a `Regex`,
+* Arguments
+- `ignore=false` can be used to skip reading in matching files. It can be a `Regex`,
 `Vector{Regex}`, or a single argument `Function` that takes the path and returns
-`true` if it should be ignored, `false` otherwise.
+`true` if it should be ignored, `false` otherwise. 
+- `force=false` can be used to force the usage of the contents stored in the `Path` 
+object regardless of whether the path is available or not.
+
 """
-macro path(expr, ignore=:nothing)
+macro path(expr, ignore=:nothing, force=:false)
     file = string(__source__.file)
     dir = safe_isfile(file) ? dirname(file) : pwd()
-    return :($(Path)($__module__, $dir, $(esc(expr)), $(esc(ignore))))
+    return :($(Path)($__module__, $dir, $(esc(expr)), $(esc(ignore)), $(esc(force))))
 end
 
 struct Path <: AbstractString
@@ -48,8 +52,9 @@ struct Path <: AbstractString
     path::String
     hash::String
     files::Dict{String,Vector{UInt8}}
+    force::Bool
 
-    function Path(mod::Module, dir, path::AbstractString, ignore=nothing)
+    function Path(mod::Module, dir, path::AbstractString, ignore=nothing, force=false)
         path = isabspath(path) ? path : joinpath(dir, path)
         path = normpath(path)
         safe_ispath(path) || throw(ArgumentError("not a path: `$path`"))
@@ -70,7 +75,7 @@ struct Path <: AbstractString
                 end
             end
         end
-        return new(is_dir, mod, dir, string(Base.SHA1(SHA.digest!(ctx))), files)
+        return new(is_dir, mod, dir, string(Base.SHA1(SHA.digest!(ctx))), files, force)
     end
 end
 
@@ -90,7 +95,7 @@ Base.iterate(f::Path, state::Integer) = iterate(getpath(f), state)
 Base.String(f::Path) = String(getpath(f))
 
 function getpath(f::Path)
-    if safe_ispath(f.path)
+    if !f.force && safe_ispath(f.path)
         root = getroot(f)
         # Confirm whether what's actually been returned as the root path is
         # valid, when it isn't then provide the relocated path instead.
