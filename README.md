@@ -2,10 +2,12 @@
 
 An alternative to the `@__DIR__` macro. Packages that wish to reference paths
 in their project directory run into issues with relocatability when used in
-conjunction with `PackageCompiler`. The `@path` macro provided by this package
-overcomes this limitation. See [here][pkgcompiler] and [here][julia-issue] for
-further details.
+conjunction with `PackageCompiler`, and [Precompile file relocatability in
+Julia 1.11](precompile-reloc) and above. The `@path` macro provided by this
+package overcomes this limitation. See [here][pkgcompiler] and
+[here][julia-issue] for further details.
 
+[precompile-reloc]: https://julialang.org/blog/2024/10/julia-1.11-highlights/#precompile_file_relocatability
 [pkgcompiler]: https://julialang.github.io/PackageCompiler.jl/stable/apps.html#relocatability
 [julia-issue]: https://github.com/JuliaLang/julia/issues/38696
 
