@@ -8,6 +8,12 @@ const BARE_FILE = @path "bare-file.jl"
 const DIR = @path "path"
 const FILE = @path joinpath("path", "file.jl")
 const OTHER = @path joinpath(DIR, "subfolder/other.jl") # issue 8
+
+const FORCE_BARE_FILE = @path "unmoved-file.jl" nothing true
+const FORCE_DIR = @path "unmoved-path" nothing true
+const FORCE_FILE = @path joinpath("unmoved-path", "file.jl") nothing true
+const FORCE_OTHER = @path joinpath(DIR, "subfolder/other.jl") nothing true
+
 const IGNORE_RE = @path "path" r".md$"
 const IGNORE_RE_REL = @path "path" r"^subfolder"
 const IGNORE_RES = @path "path" [r".md$"]
@@ -21,24 +27,50 @@ end
     tests = function ()
         @test isfile(M.BARE_FILE)
         @test read(M.BARE_FILE, String) == "# bare file.jl"
+        
+        @test isfile(M.FORCE_BARE_FILE)
+        @test String(M.FORCE_BARE_FILE) != joinpath(@__DIR__, "unmoved-file.jl")
+        @test read(M.FORCE_BARE_FILE, String) == "# unmoved file.jl"
 
         @test isfile(M.FILE)
         @test read(M.FILE, String) == "# file.jl"
 
+        @test isfile(M.FORCE_FILE)
+        @test String(M.FORCE_FILE) != joinpath(@__DIR__, "path", "file.jl")
+        @test read(M.FORCE_FILE, String) == "# file.jl"
+
         @test isfile(M.OTHER)
         @test read(M.OTHER, String) == "# other.jl"
+
+        @test isfile(M.FORCE_OTHER)
+        @test String(M.FORCE_OTHER) != joinpath(@__DIR__, "path", "subfolder", "other.jl")
+        @test read(M.FORCE_OTHER, String) == "# other.jl"
 
         @test isdir(M.DIR)
         @test sort(readdir(M.DIR)) == ["file.jl", "file.json", "subfolder", "text.md"]
         @test readdir(joinpath(M.DIR, "subfolder")) == ["other.jl"]
 
+        @test sort(readdir(M.FORCE_DIR)) == ["file.jl", "file.json", "subfolder", "text.md"]
+        @test readdir(joinpath(M.FORCE_DIR, "subfolder")) == ["other.jl"]
+        @test String(M.FORCE_DIR) != joinpath(@__DIR__, "path")
+
+
         @test read(joinpath(M.DIR, "file.jl"), String) == "# file.jl"
         @test read(joinpath(M.DIR, "text.md"), String) == "text.md"
         @test read(joinpath(M.DIR, "subfolder", "other.jl"), String) == "# other.jl"
 
+        @test read(joinpath(M.FORCE_DIR, "file.jl"), String) == "# file.jl"
+        @test read(joinpath(M.FORCE_DIR, "text.md"), String) == "text.md"
+        @test read(joinpath(M.FORCE_DIR, "subfolder", "other.jl"), String) == "# other.jl"
+
+
         @test length(M.DIR.files) == 4
         @test M.DIR.mod == M
         @test M.DIR.path == joinpath(@__DIR__, "path")
+
+        @test length(M.FORCE_DIR.files) == 4
+        @test M.FORCE_DIR.mod == M
+        @test M.FORCE_DIR.path == joinpath(@__DIR__, "unmoved-path")
 
         @test length(M.IGNORE_RE.files) == 3
         @test !haskey(M.IGNORE_RE.files, joinpath("path", "text.md"))
